@@ -212,7 +212,7 @@ def reacher():
 @train_rl_ex.named_config
 def seals_ant():
     environment = dict(
-        gym_id="seals/Ant-v0",
+        gym_id="seals/Ant-v1",
         num_vec=1,
     )
 

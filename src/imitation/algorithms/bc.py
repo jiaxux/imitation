@@ -491,7 +491,7 @@ class BC(algo_base.DemonstrationAlgorithm):
                 lambda x: util.safe_to_tensor(x, device=self.policy.device),
                 types.maybe_unwrap_dictobs(batch["obs"]),
             )
-            acts = util.safe_to_tensor(batch["acts"], device=self.policy.device)
+            acts = util.safe_to_tensor(batch["acts"], device=self.policy.device).cuda()
             training_metrics = self.loss_calculator(self.policy, obs_tensor, acts)
 
             # Renormalise the loss to be averaged over the whole

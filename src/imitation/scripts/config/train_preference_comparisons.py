@@ -77,7 +77,7 @@ def cartpole():
 
 @train_preference_comparisons_ex.named_config
 def seals_ant():
-    environment = dict(gym_id="seals/Ant-v0")
+    environment = dict(gym_id="seals/Ant-v1")
     rl = dict(
         batch_size=2048,
         rl_kwargs=dict(

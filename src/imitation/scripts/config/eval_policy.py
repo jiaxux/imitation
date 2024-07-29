@@ -108,7 +108,7 @@ def reacher():
 
 @eval_policy_ex.named_config
 def seals_ant():
-    environment = dict(gym_id="seals/Ant-v0")
+    environment = dict(gym_id="seals/Ant-v1")
 
 
 @eval_policy_ex.named_config

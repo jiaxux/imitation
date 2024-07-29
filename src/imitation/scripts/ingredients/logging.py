@@ -32,7 +32,7 @@ def config():
     log_root = None
     log_dir = None
     log_level = logging.INFO
-    log_format_strs = ["tensorboard", "stdout"]
+    log_format_strs = ["wandb", "stdout"]
     # The keys of log_format_strs_additional are concatenated to log_format_strs.
     # This allows named configs to add format strings, without changing the defaults.
     log_format_strs_additional = {}
@@ -54,7 +54,12 @@ def hook(config, command_name: str, logger):
         log_root = util.parse_path(config_log_root)
         env_sanitized = hfsb3.EnvironmentName(config["environment"]["gym_id"])
         assert isinstance(env_sanitized, str)
-        log_dir = log_root / command_name / env_sanitized / util.make_unique_timestamp()
+        log_dir = (
+            log_root
+            / command_name
+            / env_sanitized
+            / util.make_unique_timestamp()
+        )
         updates["log_dir"] = log_dir
     return updates
 
@@ -109,8 +114,8 @@ def setup_logging(
         Returning `log_dir` avoids the caller needing to capture this value.
     """
     log_dir = make_log_dir()
-    if "wandb" in log_format_strs:
-        wb.wandb_init(log_dir=str(log_dir))
+
+    wb.wandb_init(log_dir=str(log_dir))
     custom_logger = imit_logger.configure(
         folder=log_dir / "log",
         format_strs=log_format_strs,

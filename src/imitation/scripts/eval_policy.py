@@ -27,6 +27,7 @@ class InteractiveRender(VecEnvWrapper):
         """Builds renderer for `venv` running at `fps` frames per second."""
         super().__init__(venv)
         self.render_fps = fps
+        self.index = 0
 
     def reset(self):
         ob = self.venv.reset()
@@ -37,7 +38,10 @@ class InteractiveRender(VecEnvWrapper):
         ob = self.venv.step_wait()
         if self.render_fps > 0:
             time.sleep(1 / self.render_fps)
-        self.venv.render()
+        # visualize image
+        self.venv.render(mode="human")
+        print(f"Step {self.index}")
+        self.index += 1
         return ob
 
 
@@ -93,9 +97,9 @@ def eval_policy(
         Return value of `imitation.util.rollout.rollout_stats()`.
     """
     log_dir = logging_ingredient.make_log_dir()
-    sample_until = rollout.make_sample_until(eval_n_timesteps, eval_n_episodes)
+    sample_until = rollout.make_sample_until(1000, 2)
     post_wrappers = [video_wrapper_factory(log_dir, **video_kwargs)] if videos else None
-    render_mode = "rgb_array" if videos else None
+    render_mode = "rgb_array"
     with environment.make_venv(  # type: ignore[wrong-keyword-args]
         post_wrappers=post_wrappers,
         env_make_kwargs=dict(render_mode=render_mode),

@@ -230,6 +230,10 @@ def stack_maybe_dictobs(arrs: List[ObsVar]) -> ObsVar:
     if isinstance(arrs[0], DictObs):
         return DictObs.stack(arrs)
     else:
+        for arr in arrs:
+            print(np.array(arr).shape)
+            if np.array(arr).shape == (17,):
+                raise ValueError("stack_maybe_dictobs")
         return np.stack(arrs)
 
 

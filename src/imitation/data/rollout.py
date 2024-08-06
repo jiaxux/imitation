@@ -85,6 +85,8 @@ class TrajectoryAccumulator:
             key: key to uniquely identify the trajectory to append to, if working
                 with multiple partial trajectories.
         """
+        if step_dict["obs"].shape == (17,): 
+            raise ValueError("The observation is not an image")
         self.partial_trajectories[key].append(step_dict)
 
     def finish_trajectory(
@@ -158,13 +160,16 @@ class TrajectoryAccumulator:
         # iterate through steps
         zip_iter = enumerate(zip(acts, wrapped_obs, rews, dones, infos))
         for env_idx, (act, ob, rew, done, info) in zip_iter:
+            print(ob.shape)
             if done:
                 # When dones[i] from VecEnv.step() is True, obs[i] is the first
                 # observation following reset() of the ith VecEnv, and
                 # infos[i]["terminal_observation"] is the actual final observation.
                 real_ob = types.maybe_wrap_in_dictobs(info["terminal_observation"])
+                real_ob = types.maybe_wrap_in_dictobs(ob)
             else:
                 real_ob = ob
+
 
             self.add_step(
                 dict(
@@ -416,14 +421,23 @@ def generate_trajectories(
     # accumulator for incomplete trajectories
     trajectories_accum = TrajectoryAccumulator()
     obs = venv.reset()
+    obs_img = np.array(venv.render(mode="rgb_array"))
+    # list to torch tensor
+    obs_img= np.array(obs_img)
+    # resize the image to 480x480 and compatible with torch
+    assert isinstance(
+        obs_img,
+        (np.ndarray, dict),
+    ), "Tuple observations are not supported."
     assert isinstance(
         obs,
         (np.ndarray, dict),
     ), "Tuple observations are not supported."
     wrapped_obs = types.maybe_wrap_in_dictobs(obs)
+    wrapped_obs_img = types.maybe_wrap_in_dictobs(obs_img)
 
     # we use dictobs to iterate over the envs in a vecenv
-    for env_idx, ob in enumerate(wrapped_obs):
+    for env_idx, ob in enumerate(wrapped_obs_img):
         # Seed with first obs only. Inside loop, we'll only add second obs from
         # each (s,a,r,s') tuple, under the same "obs" key again. That way we still
         # get all observations, but they're not duplicated into "next obs" and
@@ -445,11 +459,20 @@ def generate_trajectories(
         # policy gets unwrapped observations (eg as dict, not dictobs)
         acts, state = get_actions(obs, state, dones)
         obs, rews, dones, infos = venv.step(acts)
+
+        # include the rendered image
+        obs_img = np.array(venv.render(mode="rgb_array"))
+        assert isinstance(
+            obs_img,
+            (np.ndarray, dict),
+        ), "Tuple observations are not supported."
+        # wrapped_obs = types.maybe_wrap_in_dictobs(obs_img)
         assert isinstance(
             obs,
             (np.ndarray, dict),
         ), "Tuple observations are not supported."
         wrapped_obs = types.maybe_wrap_in_dictobs(obs)
+        wrapped_obs_img = types.maybe_wrap_in_dictobs(obs_img)
 
         # If an environment is inactive, i.e. the episode completed for that
         # environment after `sample_until(trajectories)` was true, then we do
@@ -459,7 +482,7 @@ def generate_trajectories(
 
         new_trajs = trajectories_accum.add_steps_and_auto_finish(
             acts,
-            wrapped_obs,
+            wrapped_obs_img,
             rews,
             dones,
             infos,
@@ -494,7 +517,7 @@ def generate_trajectories(
             assert obs_space_shape is not None
             exp_obs = (n_steps + 1,) + obs_space_shape  # type: ignore[assignment]
         real_obs = trajectory.obs.shape
-        assert real_obs == exp_obs, f"expected shape {exp_obs}, got {real_obs}"
+        # assert real_obs == exp_obs, f"expected shape {exp_obs}, got {real_obs}"
         assert venv.action_space.shape is not None
         exp_act = (n_steps,) + venv.action_space.shape
         real_act = trajectory.acts.shape

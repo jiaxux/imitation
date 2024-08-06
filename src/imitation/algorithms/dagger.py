@@ -141,6 +141,7 @@ def _save_dagger_demo(
     random_uuid = uuid.UUID(int=randbits, version=4).hex
     filename = f"{actual_prefix}dagger-demo-{trajectory_index}-{random_uuid}.npz"
     npz_path = save_dir / filename
+    print(f"Saving demo at '{npz_path}'")
     assert (
         not npz_path.exists()
     ), "The following DAgger demonstration path already exists: {0}".format(npz_path)
@@ -221,9 +222,10 @@ class InteractiveTrajectoryCollector(vec_env.VecEnvWrapper):
         """
         self.traj_accum = rollout.TrajectoryAccumulator()
         obs = self.venv.reset()
+        obs_img = np.array(self.venv.render(mode="rgb_array"))[0]
         assert isinstance(obs, np.ndarray)
         for i, ob in enumerate(obs):
-            self.traj_accum.add_step({"obs": ob}, key=i)
+            self.traj_accum.add_step({"obs": obs_img}, key=i)
         self._last_obs = obs
         self._is_reset = True
         self._last_user_actions = None
@@ -270,12 +272,13 @@ class InteractiveTrajectoryCollector(vec_env.VecEnvWrapper):
             Observation, reward, dones (is terminal?) and info dict.
         """
         next_obs, rews, dones, infos = self.venv.step_wait()
+        images = np.array(self.venv.render(mode="rgb_array"))
         assert isinstance(next_obs, np.ndarray)
         assert self.traj_accum is not None
         assert self._last_user_actions is not None
-        self._last_obs = next_obs
+        self._last_obs = images
         fresh_demos = self.traj_accum.add_steps_and_auto_finish(
-            obs=next_obs,
+            obs=images,
             acts=self._last_user_actions,
             rews=rews,
             infos=infos,
@@ -361,11 +364,11 @@ class DAggerTrainer(base.BaseImitationAlgorithm):
         self._all_demos = []
         self.rng = rng
 
-        utils.check_for_correct_spaces(
-            self.venv,
-            bc_trainer.observation_space,
-            bc_trainer.action_space,
-        )
+        # utils.check_for_correct_spaces(
+        #     self.venv,
+        #     bc_trainer.observation_space,
+        #     bc_trainer.action_space,
+        # )
         self.bc_trainer = bc_trainer
         self.bc_trainer.logger = self.logger
 

@@ -30,6 +30,7 @@ from imitation.data import rollout, types
 from imitation.policies import base as policy_base
 from imitation.util import logger as imit_logger
 from imitation.util import util
+from utils.networks import NatureCNN
 
 
 @dataclasses.dataclass(frozen=True)
@@ -339,11 +340,12 @@ class BC(algo_base.DemonstrationAlgorithm):
         self.rng = rng
 
         if policy is None:
-            extractor = (
-                torch_layers.CombinedExtractor
-                if isinstance(observation_space, gym.spaces.Dict)
-                else torch_layers.FlattenExtractor
-            )
+            # extractor = (
+            #     torch_layers.CombinedExtractor
+            #     if isinstance(observation_space, gym.spaces.Dict)
+            #     else torch_layers.FlattenExtractor
+            # )
+            extractor = NatureCNN
             policy = policy_base.FeedForward32Policy(
                 observation_space=observation_space,
                 action_space=action_space,
@@ -450,13 +452,15 @@ class BC(algo_base.DemonstrationAlgorithm):
             n_minibatches,
             _on_epoch_end,
         )
+        import pdb; pdb.set_trace()
         batches_with_stats = enumerate_batches(demonstration_batches)
+        import pdb; pdb.set_trace()
         tqdm_progress_bar: Optional[tqdm.tqdm] = None
 
         if progress_bar:
             batches_with_stats = tqdm.tqdm(
                 batches_with_stats,
-                unit="batch",
+                unit="batch ",
                 total=n_minibatches,
             )
             tqdm_progress_bar = batches_with_stats
